@@ -26,11 +26,12 @@ Create a `.env.local` file with your ConvertKit credentials:
 ```bash
 CONVERTKIT_API_KEY=your_api_key
 CONVERTKIT_FORM_ID=your_form_id
+ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/... # Optional
 # Optional: point to a different base URL (defaults to the public API)
 # CONVERTKIT_BASE_URL=https://api.convertkit.com/v3
 ```
 
-The email capture form calls the `/api/subscribe` route, which relays submissions directly to ConvertKit using the values above. Leave the fields unset to work offline without triggering real API calls.
+The email capture form calls the `/api/subscribe` route, which relays submissions directly to ConvertKit using the values above. Leave the fields unset to work offline without triggering real API calls. When `ZAPIER_WEBHOOK_URL` is present, the route will also forward the subscription summary to Zapier after a successful ConvertKit request.
 
 ## Available scripts
 
