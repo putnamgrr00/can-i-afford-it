@@ -4,8 +4,6 @@ export type MoneyHealthZone = {
   key: MoneyHealthZoneKey;
   label: string;
   description: string;
-  accentClass: string;
-  barClass: string;
 };
 
 const ZONES: Array<MoneyHealthZone & { threshold: number }> = [
@@ -13,24 +11,18 @@ const ZONES: Array<MoneyHealthZone & { threshold: number }> = [
     key: "healthy",
     label: "Healthy",
     description: "You can comfortably afford this purchase and will keep a strong buffer.",
-    accentClass: "text-emerald-600",
-    barClass: "bg-emerald-500",
     threshold: 2,
   },
   {
     key: "tight",
     label: "Tight",
     description: "You're close — make a plan before you swipe.",
-    accentClass: "text-amber-500",
-    barClass: "bg-amber-400",
     threshold: 1,
   },
   {
     key: "risky",
     label: "Risky",
     description: "Press pause — let's build your cushion first.",
-    accentClass: "text-rose-500",
-    barClass: "bg-rose-500",
     threshold: 0,
   },
 ];
