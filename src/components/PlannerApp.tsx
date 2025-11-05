@@ -9,13 +9,7 @@ import {
   getMoneyHealthZone,
   type MoneyHealthZoneKey,
 } from "@/lib/money";
-
-export type PlannerInputs = {
-  cashBalance: number;
-  monthlyIncome: number;
-  monthlyExpenses: number;
-  purchaseCost: number;
-};
+import { type PlannerInputs } from "@/lib/planner";
 
 type SubscribeState = "idle" | "loading" | "success" | "error";
 
@@ -133,7 +127,10 @@ export default function PlannerApp() {
   const handleSubscribe = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!email) {
+    const trimmedEmail = email.trim();
+    const trimmedFirstName = firstName.trim();
+
+    if (!trimmedEmail) {
       setErrorMessage("Add an email so we know where to send your plan.");
       setSubscribeState("error");
       return;
@@ -149,8 +146,8 @@ export default function PlannerApp() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
-          firstName,
+          email: trimmedEmail,
+          firstName: trimmedFirstName || undefined,
           zone: zone.label,
           cushionMonths: stats.cushionMonths,
           inputs: values,
@@ -169,6 +166,8 @@ export default function PlannerApp() {
       }
 
       setSubscribeState("success");
+      setFirstName("");
+      setEmail("");
     } catch (error) {
       console.error(error);
       setErrorMessage("Something went sideways. Try again in a few moments.");
