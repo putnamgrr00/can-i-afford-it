@@ -137,14 +137,27 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const responseText = await response.text();
+      let zapierMessage: string | undefined;
+
+      try {
+        zapierMessage = JSON.parse(responseText)?.message;
+      } catch {
+        // ignore JSON parse errors – we already have the raw text for logging
+      }
+
       console.error("Zapier webhook failed", {
         status: response.status,
         body: responseText,
       });
-      return NextResponse.json(
-        { error: "We couldn’t save your submission. Please try again." },
-        { status: 502 }
-      );
+
+      const errorMessage =
+        response.status === 404
+          ? "We couldn’t reach the Zapier webhook. Double-check that the Zap is published and the URL is correct."
+          : zapierMessage && typeof zapierMessage === "string"
+            ? zapierMessage
+            : "We couldn’t save your submission. Please try again.";
+
+      return NextResponse.json({ error: errorMessage }, { status: 502 });
     }
   } catch (error) {
     clearTimeout(timeout);
