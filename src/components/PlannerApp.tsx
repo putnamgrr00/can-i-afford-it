@@ -7,9 +7,11 @@ import {
   formatCurrency,
   formatCushionMonths,
   getMoneyHealthZone,
+  type MoneyHealthZone,
   type MoneyHealthZoneKey,
 } from "@/lib/money";
 import { type PlannerInputs } from "@/lib/planner";
+import { ResultCard } from "./ResultCard";
 
 type SubscribeState = "idle" | "loading" | "success" | "error";
 
@@ -75,6 +77,24 @@ const ZONE_SUPPORT: Record<MoneyHealthZoneKey, string> = {
   risky: "Press pause for now. A little more cash cushion will make this feel so much lighter.",
 };
 
+const ZONE_TIPS: Record<MoneyHealthZoneKey, string[]> = {
+  healthy: [
+    "Keep the celebration going by automating a transfer to your next money goal.",
+    "Lock in this win: schedule the purchase and stash a little extra for future you.",
+    "You’re in the green! Treat yourself and your business to a mini money date to stay on track.",
+  ],
+  tight: [
+    "You’re almost there—pause 24 hours and rerun the numbers after trimming one small expense.",
+    "Set a calendar reminder to revisit this purchase after your next pay cycle or invoice clears.",
+    "Try negotiating one bill this week to nudge your cushion into the green.",
+  ],
+  risky: [
+    "Give yourself breathing room: focus on boosting cash reserves before tapping ‘buy.’",
+    "Channel this clarity into action—map out a mini savings sprint for the next two paychecks.",
+    "Protect your peace by pressing pause and building a one-month buffer before committing.",
+  ],
+};
+
 const CTA_LINK = "https://girlletstalkmoney.com/clarity-call";
 
 export default function PlannerApp() {
@@ -83,6 +103,18 @@ export default function PlannerApp() {
   const [email, setEmail] = useState("");
   const [subscribeState, setSubscribeState] = useState<SubscribeState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submittedResult, setSubmittedResult] = useState<{
+    firstName?: string;
+    email: string;
+    inputs: PlannerInputs;
+    stats: {
+      projectedCash: number;
+      monthlyNet: number;
+      cushionMonths: number;
+    };
+    zone: MoneyHealthZone;
+    tip: string;
+  } | null>(null);
 
   const stats = useMemo(() => {
     const projectedCash = values.cashBalance - values.purchaseCost;
@@ -138,6 +170,7 @@ export default function PlannerApp() {
 
     setSubscribeState("loading");
     setErrorMessage(null);
+    setSubmittedResult(null);
 
     try {
       const response = await fetch("/api/subscribe", {
@@ -164,6 +197,18 @@ export default function PlannerApp() {
         setSubscribeState("error");
         return;
       }
+
+      const tipPool = ZONE_TIPS[zone.key];
+      const randomTip = tipPool[Math.floor(Math.random() * tipPool.length)];
+
+      setSubmittedResult({
+        firstName: trimmedFirstName || undefined,
+        email: trimmedEmail,
+        inputs: { ...values },
+        stats: { ...stats },
+        zone,
+        tip: randomTip,
+      });
 
       setSubscribeState("success");
       setFirstName("");
@@ -315,20 +360,30 @@ export default function PlannerApp() {
                 {subscribeState === "error" && errorMessage ? (
                   <p className="text-sm font-medium text-rose-500">{errorMessage}</p>
                 ) : null}
-                {subscribeState === "success" ? (
-                  <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-700">
-                    <p className="font-semibold">Check your inbox! 💌</p>
-                    <p>
-                      Your Money Health recap and checklist are on their way. Ready for more clarity?
-                    </p>
-                    <a
-                      href={CTA_LINK}
-                      className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-600"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Book a free Clarity Call
-                    </a>
+                {subscribeState === "success" && submittedResult ? (
+                  <div className="space-y-6">
+                    <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-700">
+                      <p className="font-semibold">Check your inbox! 💌</p>
+                      <p>
+                        Your Money Health recap and checklist are on their way. Ready for more clarity?
+                      </p>
+                      <a
+                        href={CTA_LINK}
+                        className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-600"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Book a free Clarity Call
+                      </a>
+                    </div>
+                    <ResultCard
+                      firstName={submittedResult.firstName}
+                      email={submittedResult.email}
+                      inputs={submittedResult.inputs}
+                      stats={submittedResult.stats}
+                      zone={submittedResult.zone}
+                      tip={submittedResult.tip}
+                    />
                   </div>
                 ) : null}
               </form>
