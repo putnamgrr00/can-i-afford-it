@@ -50,3 +50,5 @@ The email capture form calls the `/api/subscribe` route, which relays submission
 ## Deployment
 
 The app is optimized for deployment on Vercel. Push the repository to GitHub, connect the project in Vercel, and add the required environment variables in the dashboard. Every push to your main branch will trigger a new preview build.
+
+If you previously customized the project to deploy as a static site, make sure the **Build & Output Settings → Output Directory** field is empty. The included `vercel.json` pins the build step to the official Next.js runtime so Vercel produces the correct serverless output even when the project was created with an alternate preset. After updating the configuration, trigger a redeploy and the root route (`/`) should serve the planner instead of the generic 404 page.
