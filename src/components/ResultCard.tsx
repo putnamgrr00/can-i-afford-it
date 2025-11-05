@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import confetti from "canvas-confetti";
+import { toPng } from "html-to-image";
 
 import {
   clampMeterValue,
@@ -114,7 +115,6 @@ export function ResultCard({ firstName, email, inputs, stats, zone, tip }: Resul
 
     try {
       setDownloadFeedback(null);
-      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(cardRef.current, {
         cacheBust: true,
         pixelRatio: 2,
