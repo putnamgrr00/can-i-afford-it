@@ -1,13 +1,13 @@
-# Money Made Simple – Can I Afford It?
+# Anna Murphy – Can I Afford It?
 
-An interactive, mobile-friendly money planner that helps users decide whether they can comfortably afford a purchase right now. The experience mirrors the project handover document provided by Girl Let's Talk Money: four quick inputs, a color-coded Money Health result, plain-English guidance, and optional ConvertKit email capture.
+An interactive, mobile-friendly money planner crafted by financial clarity mentor Anna Murphy. It helps users decide whether they can comfortably afford a purchase right now with four quick inputs, a color-coded Money Health result, plain-English guidance, and an optional ConvertKit email capture that keeps the conversation going with Anna.
 
 ## Features
 
 - 📊 **Affordability Planner** – cash balance, income, expenses, and purchase cost sliders with numeric inputs.
 - 🌈 **Money Health Meter** – instant zone feedback (Healthy / Tight / Risky) with a cushion calculator.
 - 🎉 **Gamified Delight** – celebratory confetti when the result moves into the Healthy zone.
-- 💌 **Email Capture** – optional ConvertKit opt-in that sends the Money Health summary to the inbox.
+- 💌 **Email Capture** – optional ConvertKit opt-in that sends the Money Health summary to the inbox and invites users to stay in touch with Anna Murphy.
 - 📱 **Responsive Layout** – tuned for mobile-first usage with accessible controls and typography.
 
 ## Getting Started
@@ -46,7 +46,7 @@ The email capture form calls the `/api/subscribe` route, which relays submission
 
 - **Colors** – Emerald (#4FB286) for healthy results, Amber (#FFC857) for tight, and Rose (#E9724C) for risky.
 - **Typography** – Poppins for display headlines and Inter for body copy, loaded via the shared Google Fonts import.
-- **Tone** – Supportive, human language pulled from the handover brief (“No spreadsheets. No judgment.”).
+- **Tone** – Supportive, human language that reflects Anna Murphy's calm, confidence-building coaching (“No spreadsheets. No judgment.”).
 
 ## Deployment
 

@@ -286,7 +286,7 @@ export default function PlannerApp() {
       <section className="px-6 pb-10 pt-16 sm:pt-20">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 text-center">
           <span className="mx-auto rounded-full bg-white/60 px-4 py-1 text-sm font-medium text-slate-600 shadow-sm">
-            Money Made Simple presents
+            Anna Murphy presents
           </span>
           <h1 className="text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
             Can I actually afford this right now?
@@ -378,24 +378,64 @@ export default function PlannerApp() {
 
             <div className="rounded-3xl bg-white p-8 shadow-xl shadow-amber-100/60">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-600">Step 2</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Email me my result & checklist</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Email me my result & Anna&apos;s checklist</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Get your Money Health summary plus Anna&apos;s Money Clarity Checklist delivered to your inbox.
+                Get your Money Health summary plus Anna Murphy&apos;s Money Clarity Checklist delivered straight to your inbox.
               </p>
-              <button
-                type="button"
-                onClick={openModal}
-                disabled={!inputsAreValid || subscribeState === "loading"}
-                className="mt-6 inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-slate-300 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:bg-slate-400"
-              >
-                {subscribeState === "loading" ? "Sending..." : "Can I afford it?"}
-              </button>
-              <p className="mt-3 text-xs text-slate-400">
-                By sharing your email you&apos;ll join the Money Made Simple list. Unsubscribe anytime.
-              </p>
-              <span className="sr-only" aria-live="polite" role="status">
-                {screenReaderStatus}
-              </span>
+              <form className="mt-6 space-y-4" onSubmit={handleSubscribe}>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    First name <span className="text-xs font-normal text-slate-400">Optional</span>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                      placeholder="Taylor"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-normal text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-1 sm:[grid-column:auto/span_1]">
+                    Email address
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      required
+                      placeholder="you@example.com"
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-normal text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-slate-400">
+                  By sharing your email you&apos;ll join Anna Murphy&apos;s list. Unsubscribe anytime.
+                </p>
+                <button
+                  type="submit"
+                  disabled={subscribeState === "loading"}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-slate-300 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:bg-slate-400"
+                >
+                  {subscribeState === "loading" ? "Sending..." : "Send my result"}
+                </button>
+                {subscribeState === "error" && errorMessage ? (
+                  <p className="text-sm font-medium text-rose-500">{errorMessage}</p>
+                ) : null}
+                {subscribeState === "success" ? (
+                  <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-700">
+                    <p className="font-semibold">Check your inbox! 💌</p>
+                    <p>
+                      Your Money Health recap and checklist are on their way. Ready for more clarity?
+                    </p>
+                    <a
+                      href={CTA_LINK}
+                      className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-600"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Book a free Clarity Call
+                    </a>
+                  </div>
+                ) : null}
+              </form>
             </div>
           </div>
 
