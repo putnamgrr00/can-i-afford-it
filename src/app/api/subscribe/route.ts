@@ -21,8 +21,8 @@ type ConvertKitResponse = {
 const CONVERTKIT_BASE_URL = process.env.CONVERTKIT_BASE_URL ?? "https://api.convertkit.com/v3";
 const ZAPIER_WEBHOOK_URL = sanitizeString(process.env.ZAPIER_WEBHOOK_URL);
 
-function isNonNegativeFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 type ZapierPayload = {
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Money health zone is required." }, { status: 400 });
   }
 
-  if (!isNonNegativeFiniteNumber(payload.cushionMonths)) {
+  if (!isFiniteNumber(payload.cushionMonths)) {
     return NextResponse.json({ error: "Cushion months must be a valid number." }, { status: 400 });
   }
 
