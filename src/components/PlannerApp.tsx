@@ -184,7 +184,7 @@ export default function PlannerApp() {
       <section className="px-6 pb-10 pt-16 sm:pt-20">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 text-center">
           <span className="mx-auto rounded-full bg-white/60 px-4 py-1 text-sm font-medium text-slate-600 shadow-sm">
-            Money Made Simple presents
+            Anna Murphy presents
           </span>
           <h1 className="text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
             Can I actually afford this right now?
@@ -274,9 +274,9 @@ export default function PlannerApp() {
 
             <div className="rounded-3xl bg-white p-8 shadow-xl shadow-amber-100/60">
               <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-600">Step 2</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Email me my result & checklist</h2>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Email me my result & Anna&apos;s checklist</h2>
               <p className="mt-2 text-sm text-slate-600">
-                Get your Money Health summary plus Anna&apos;s Money Clarity Checklist delivered to your inbox.
+                Get your Money Health summary plus Anna Murphy&apos;s Money Clarity Checklist delivered straight to your inbox.
               </p>
               <form className="mt-6 space-y-4" onSubmit={handleSubscribe}>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -303,7 +303,7 @@ export default function PlannerApp() {
                   </label>
                 </div>
                 <p className="text-xs text-slate-400">
-                  By sharing your email you&apos;ll join the Money Made Simple list. Unsubscribe anytime.
+                  By sharing your email you&apos;ll join Anna Murphy&apos;s list. Unsubscribe anytime.
                 </p>
                 <button
                   type="submit"
