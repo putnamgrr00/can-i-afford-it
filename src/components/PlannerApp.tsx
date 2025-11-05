@@ -24,6 +24,19 @@ type SubscribeState = "idle" | "loading" | "success" | "error";
 
 type PlannerStep = "inputs" | "capture" | "result";
 
+type SubmittedResult = {
+  firstName: string;
+  email: string;
+  inputs: PlannerInputs;
+  stats: {
+    projectedCash: number;
+    monthlyNet: number;
+    cushionMonths: number;
+  };
+  zone: MoneyHealthZone;
+  tip: string;
+};
+
 type InputDefinition = {
   id: keyof PlannerInputs;
   label: string;
@@ -114,6 +127,7 @@ export default function PlannerApp() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [step, setStep] = useState<PlannerStep>("inputs");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submittedResult, setSubmittedResult] = useState<SubmittedResult | null>(null);
 
   const stats = useMemo(() => {
     const projectedCash = values.cashBalance - values.purchaseCost;
@@ -271,7 +285,7 @@ export default function PlannerApp() {
       const randomTip = tipPool[Math.floor(Math.random() * tipPool.length)];
 
       setSubmittedResult({
-        firstName: trimmedFirstName || undefined,
+        firstName: trimmedFirstName,
         email: trimmedEmail,
         inputs: { ...values },
         stats: { ...stats },
@@ -418,12 +432,19 @@ export default function PlannerApp() {
               <form className="mt-6 space-y-4" onSubmit={handleSubscribe}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    First name <span className="text-xs font-normal text-slate-400">Optional</span>
+                    First name
                     <input
                       type="text"
                       value={firstName}
-                      onChange={(event) => setFirstName(event.target.value)}
+                      onChange={(event) => {
+                        setFirstName(event.target.value);
+                        if (subscribeState === "error") {
+                          setSubscribeState("idle");
+                          setErrorMessage(null);
+                        }
+                      }}
                       placeholder="Taylor"
+                      required
                       className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-normal text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                     />
                   </label>
