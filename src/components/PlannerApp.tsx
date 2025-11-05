@@ -2,6 +2,7 @@
 
 import {
   type FormEvent,
+  type MouseEvent as ReactMouseEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -9,6 +10,7 @@ import {
   useState,
 } from "react";
 import confetti from "canvas-confetti";
+
 import {
   clampMeterValue,
   formatCurrency,
@@ -18,6 +20,8 @@ import {
   type MoneyHealthZoneKey,
 } from "@/lib/money";
 import { type PlannerInputs } from "@/lib/planner";
+
+import styles from "./PlannerApp.module.css";
 import { ResultCard } from "./ResultCard";
 
 type SubscribeState = "idle" | "loading" | "success" | "error";
@@ -107,7 +111,7 @@ const ZONE_TIPS: Record<MoneyHealthZoneKey, string[]> = {
   ],
   tight: [
     "You’re almost there—pause 24 hours and rerun the numbers after trimming one small expense.",
-    "Set a calendar reminder to revisit this purchase after your next pay cycle or invoice clears.",
+    "Set a reminder to revisit this purchase after your next pay cycle or invoice clears.",
     "Try negotiating one bill this week to nudge your cushion into the green.",
   ],
   risky: [
@@ -119,6 +123,26 @@ const ZONE_TIPS: Record<MoneyHealthZoneKey, string[]> = {
 
 const CTA_LINK = "https://girlletstalkmoney.com/clarity-call";
 
+function getStatusBadgeClass(zone: MoneyHealthZoneKey) {
+  if (zone === "healthy") {
+    return styles.statusHealthy;
+  }
+  if (zone === "tight") {
+    return styles.statusTight;
+  }
+  return styles.statusRisky;
+}
+
+function getMeterClass(zone: MoneyHealthZoneKey) {
+  if (zone === "healthy") {
+    return styles.meterHealthy;
+  }
+  if (zone === "tight") {
+    return styles.meterTight;
+  }
+  return styles.meterRisky;
+}
+
 export default function PlannerApp() {
   const [values, setValues] = useState(DEFAULT_VALUES);
   const [firstName, setFirstName] = useState("");
@@ -128,6 +152,9 @@ export default function PlannerApp() {
   const [step, setStep] = useState<PlannerStep>("inputs");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submittedResult, setSubmittedResult] = useState<SubmittedResult | null>(null);
+
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const firstFieldRef = useRef<HTMLInputElement>(null);
 
   const stats = useMemo(() => {
     const projectedCash = values.cashBalance - values.purchaseCost;
@@ -150,6 +177,17 @@ export default function PlannerApp() {
   const previousZone = useRef<MoneyHealthZoneKey>(zone.key);
   const previousStep = useRef<PlannerStep>(step);
 
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setErrorMessage(null);
+    if (step !== "result") {
+      setStep("inputs");
+    }
+    if (subscribeState !== "loading") {
+      setSubscribeState("idle");
+    }
+  }, [step, subscribeState]);
+
   useEffect(() => {
     const zoneChanged = previousZone.current !== zone.key;
     const enteredResultStep = previousStep.current !== "result" && step === "result";
@@ -163,7 +201,7 @@ export default function PlannerApp() {
         particleCount: 120,
         spread: 65,
         origin: { y: 0.7 },
-        colors: ["#4FB286", "#6ee7b7", "#a855f7"],
+        colors: ["#16A34A", "#86EFAC", "#A855F7"],
       });
     }
 
@@ -171,7 +209,61 @@ export default function PlannerApp() {
     previousStep.current = step;
   }, [zone.key, step]);
 
-  const firstFieldRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!isModalOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && subscribeState !== "loading") {
+        closeModal();
+        return;
+      }
+
+      if (event.key !== "Tab" || !modalRef.current) {
+        return;
+      }
+
+      const focusableSelectors = [
+        "a[href]",
+        "button:not([disabled])",
+        "textarea:not([disabled])",
+        "input:not([type='hidden']):not([disabled])",
+        "select:not([disabled])",
+        "[tabindex]:not([tabindex='-1'])",
+      ];
+
+      const focusable = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>(focusableSelectors.join(",")),
+      ).filter((element) => element.offsetParent !== null || element === document.activeElement);
+
+      if (focusable.length === 0) {
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const isShift = event.shiftKey;
+
+      if (document.activeElement === last && !isShift) {
+        event.preventDefault();
+        first.focus();
+      } else if (document.activeElement === first && isShift) {
+        event.preventDefault();
+        last.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isModalOpen, subscribeState, closeModal]);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -195,17 +287,6 @@ export default function PlannerApp() {
     [values],
   );
 
-  const closeModal = useCallback(() => {
-    setIsModalOpen(false);
-    setErrorMessage(null);
-    if (step !== "result") {
-      setStep("inputs");
-    }
-    if (subscribeState !== "loading") {
-      setSubscribeState("idle");
-    }
-  }, [step, subscribeState]);
-
   const openModal = useCallback(() => {
     setIsModalOpen(true);
     setErrorMessage(null);
@@ -215,23 +296,18 @@ export default function PlannerApp() {
     setSubscribeState("idle");
   }, [step]);
 
-  useEffect(() => {
-    if (!isModalOpen) {
-      return;
-    }
+  const handleBackdropClick = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (subscribeState === "loading") {
+        return;
+      }
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && subscribeState !== "loading") {
+      if (event.target === event.currentTarget) {
         closeModal();
       }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isModalOpen, subscribeState, closeModal]);
+    },
+    [subscribeState, closeModal],
+  );
 
   const handleSubscribe = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -275,7 +351,7 @@ export default function PlannerApp() {
         setErrorMessage(
           typeof data.error === "string"
             ? data.error
-            : "We couldn't reach ConvertKit just yet. Please try again.",
+            : "We couldn't reach the email service just yet. Please try again.",
         );
         setSubscribeState("error");
         return;
@@ -328,72 +404,63 @@ export default function PlannerApp() {
       ? "Your results are now visible."
       : "Results will appear after you share your name and email.";
 
+  const layoutClass = [
+    styles.layout,
+    step === "result" ? styles.layoutResult : styles.layoutDefault,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <main className="flex min-h-screen flex-col">
-      <section className="px-6 pb-10 pt-16 sm:pt-20">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 text-center">
-          <span className="mx-auto rounded-full bg-white/60 px-4 py-1 text-sm font-medium text-slate-600 shadow-sm">
-            Anna Murphy presents
-          </span>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-            Can I actually afford this right now?
-          </h1>
-          <p className="mx-auto max-w-2xl text-pretty text-lg text-slate-600 sm:text-xl">
+    <main className={styles.main}>
+      <section className={`${styles.section} ${styles.hero}`}>
+        <div className={`${styles.container} ${styles.heroContent}`}>
+          <span className={styles.heroBadge}>Anna Murphy presents</span>
+          <h1 className={styles.heroHeading}>Can I actually afford this right now?</h1>
+          <p className={styles.heroDescription}>
             Use this 60-second mini planner to check your cushion, get a color-coded Money Health result, and walk away with a
             confident next step.
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <a
-              href="#planner"
-              className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-emerald-200 transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-            >
+          <div className={styles.ctaGroup}>
+            <a href="#planner" className={styles.primaryButton}>
               Start now
             </a>
-            <div className="inline-flex items-center gap-3 rounded-full bg-white/80 px-5 py-3 text-sm text-slate-500 shadow">
-              <span className="text-lg">💡</span>
+            <span className={styles.secondaryPill}>
+              <span aria-hidden="true">💡</span>
               No spreadsheets. No judgment.
-            </div>
+            </span>
           </div>
         </div>
       </section>
 
-      <section id="planner" className="pb-20">
-        <div
-          className={`mx-auto w-full px-6 ${
-            step === "result" ? "max-w-6xl" : "max-w-4xl"
-          } ${step === "result" ? "lg:grid lg:grid-cols-[1.1fr_0.9fr] lg:gap-10" : "space-y-8"}`}
-        >
-          <div className="space-y-8">
-            <div className="rounded-3xl bg-white p-8 shadow-xl shadow-emerald-100/50">
-              <div className="flex items-center justify-between gap-4">
+      <section id="planner" className={`${styles.section} ${styles.sectionSurface}`}>
+        <div className={`${styles.container} ${layoutClass}`}>
+          <div className={styles.inputGroup}>
+            <article className={styles.card}>
+              <header className={styles.cardHeader}>
                 <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-600">Step 1</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">Drop in a few numbers</h2>
+                  <p className={styles.stepLabel}>Step 1</p>
+                  <h2 className={styles.cardTitle}>Drop in a few numbers</h2>
+                  <p className={styles.helperText}>We’ll only use these details to calculate your cushion.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={resetPlanner}
-                  className="text-sm font-medium text-emerald-600 underline-offset-4 hover:underline"
-                >
+                <button type="button" onClick={resetPlanner} className={styles.resetButton}>
                   Reset
                 </button>
-              </div>
-              <div className="mt-6 space-y-8">
+              </header>
+              <div className={styles.inputGroup}>
                 {INPUTS.map((field) => (
-                  <div key={field.id} className="space-y-4">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div key={field.id} className={styles.fieldWrapper}>
+                    <div className={styles.fieldHeader}>
                       <div>
-                        <label htmlFor={`${field.id}-slider`} className="text-base font-medium text-slate-800">
-                          {field.label}
-                        </label>
-                        <p className="text-sm text-slate-500">{field.description}</p>
+                        <label htmlFor={`${field.id}-slider`}>{field.label}</label>
+                        <p className={styles.fieldDescription}>{field.description}</p>
                       </div>
-                      <div className="text-right text-lg font-semibold text-slate-700">
+                      <span className={styles.fieldValue}>
                         {field.prefix}
                         {values[field.id].toLocaleString()}
-                      </div>
+                      </span>
                     </div>
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-6">
+                    <div className={styles.controlsRow}>
                       <input
                         id={`${field.id}-slider`}
                         type="range"
@@ -402,10 +469,10 @@ export default function PlannerApp() {
                         step={field.step}
                         value={values[field.id]}
                         onChange={(event) => handleInputChange(field.id, Number(event.target.value))}
-                        className="h-2 w-full appearance-none rounded-full bg-slate-200 accent-emerald-500"
+                        className={styles.rangeInput}
                       />
-                      <div className="flex w-full items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-slate-700 md:w-44">
-                        {field.prefix ? <span className="text-sm font-semibold">{field.prefix}</span> : null}
+                      <div className={styles.numberInputWrap}>
+                        {field.prefix ? <span>{field.prefix}</span> : null}
                         <input
                           type="number"
                           inputMode="decimal"
@@ -414,26 +481,43 @@ export default function PlannerApp() {
                           step={field.step}
                           value={values[field.id]}
                           onChange={(event) => handleInputChange(field.id, Number(event.target.value))}
-                          className="w-full border-0 bg-transparent text-right text-base font-semibold text-slate-700 outline-none"
+                          className={styles.numberInput}
+                          aria-label={`${field.label} amount`}
                         />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+              <div className={styles.actions}>
+                <button
+                  type="button"
+                  onClick={openModal}
+                  className={styles.primaryButton}
+                  disabled={!inputsAreValid}
+                >
+                  Email my plan
+                </button>
+                <button type="button" onClick={openModal} className={styles.secondaryButton}>
+                  Save progress & continue later
+                </button>
+              </div>
+            </article>
 
-            <div className="rounded-3xl bg-white p-8 shadow-xl shadow-amber-100/60">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-600">Step 2</p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">Email me my result & Anna&apos;s checklist</h2>
-              <p className="mt-2 text-sm text-slate-600">
-                Get your Money Health summary plus Anna Murphy&apos;s Money Clarity Checklist delivered straight to your inbox.
+            <article className={styles.card}>
+              <header>
+                <p className={styles.stepLabel}>Step 2</p>
+                <h2 className={styles.cardTitle}>Email my result & checklist</h2>
+              </header>
+              <p className={styles.helperText}>
+                We’ll send a Money Health summary plus Anna’s Money Clarity Checklist straight to your inbox.
               </p>
-              <form className="mt-6 space-y-4" onSubmit={handleSubscribe}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              <form className={styles.inputGroup} onSubmit={handleSubscribe}>
+                <div className={styles.textInputGroup}>
+                  <label className={styles.textField}>
                     First name
                     <input
+                      ref={firstFieldRef}
                       type="text"
                       value={firstName}
                       onChange={(event) => {
@@ -445,156 +529,139 @@ export default function PlannerApp() {
                       }}
                       placeholder="Taylor"
                       required
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-normal text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                      className={`${styles.inputControl} ${
+                        subscribeState === "error" && !firstName.trim() ? styles.errorControl : ""
+                      }`}
                     />
                   </label>
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 sm:col-span-1 sm:[grid-column:auto/span_1]">
+                  <label className={styles.textField}>
                     Email address
                     <input
                       type="email"
                       value={email}
-                      onChange={(event) => setEmail(event.target.value)}
+                      onChange={(event) => {
+                        setEmail(event.target.value);
+                        if (subscribeState === "error") {
+                          setSubscribeState("idle");
+                          setErrorMessage(null);
+                        }
+                      }}
                       required
                       placeholder="you@example.com"
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-normal text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                      className={`${styles.inputControl} ${
+                        subscribeState === "error" && !email.trim() ? styles.errorControl : ""
+                      }`}
                     />
                   </label>
                 </div>
-                <p className="text-xs text-slate-400">
-                  By sharing your email you&apos;ll join Anna Murphy&apos;s list. Unsubscribe anytime.
+                <p className={styles.disclaimer}>
+                  By sharing your email you’ll join Anna Murphy’s list. Unsubscribe anytime.
                 </p>
-                <button
-                  type="submit"
-                  disabled={subscribeState === "loading"}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-slate-300 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:bg-slate-400"
-                >
-                  {subscribeState === "loading" ? "Sending..." : "Send my result"}
+                <button type="submit" disabled={subscribeState === "loading"} className={styles.primaryButton}>
+                  {subscribeState === "loading" ? "Sending…" : "Send my result"}
                 </button>
                 {subscribeState === "error" && errorMessage ? (
-                  <p className="text-sm font-medium text-rose-500">{errorMessage}</p>
+                  <p className={styles.errorText}>{errorMessage}</p>
                 ) : null}
-                {subscribeState === "success" && submittedResult ? (
-                  <div className="space-y-6">
-                    <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-700">
-                      <p className="font-semibold">Check your inbox! 💌</p>
-                      <p>
+                {submittedResult ? (
+                  <div className={styles.tipCard}>
+                    <div>
+                      <h3>Check your inbox! 💌</h3>
+                      <p className={styles.helperText}>
                         Your Money Health recap and checklist are on their way. Ready for more clarity?
                       </p>
-                      <a
-                        href={CTA_LINK}
-                        className="inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-600"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Book a free Clarity Call
-                      </a>
                     </div>
-                    <ResultCard
-                      firstName={submittedResult.firstName}
-                      email={submittedResult.email}
-                      inputs={submittedResult.inputs}
-                      stats={submittedResult.stats}
-                      zone={submittedResult.zone}
-                      tip={submittedResult.tip}
-                    />
+                    <a href={CTA_LINK} className={styles.primaryButton} target="_blank" rel="noreferrer">
+                      Book a free Clarity Call
+                    </a>
                   </div>
                 ) : null}
               </form>
-            </div>
+            </article>
           </div>
 
           {step === "result" ? (
-            <aside className="mt-10 flex h-full flex-col justify-between gap-6 lg:mt-0">
-              <div className="rounded-3xl bg-slate-900 p-8 text-white shadow-xl shadow-slate-600/30">
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-300">Money Health</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <span className="text-3xl">{zone.key === "healthy" ? "💚" : zone.key === "tight" ? "🧡" : "❤️"}</span>
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-white/60">Your zone</p>
-                    <p className="text-3xl font-semibold text-white">{zone.label}</p>
-                  </div>
+            <aside className={styles.resultSidebar} aria-live="polite" aria-label="Money Health result">
+              <article className={styles.statusCard}>
+                <span className={`${styles.statusBadge} ${getStatusBadgeClass(zone.key)}`}>
+                  Money Health · {zone.label}
+                </span>
+                <div>
+                  <h3>{ZONE_SUPPORT[zone.key]}</h3>
+                  <p className={styles.helperText}>{zone.description}</p>
                 </div>
-                <p className="mt-4 text-pretty text-base text-white/80">{ZONE_SUPPORT[zone.key]}</p>
-                <div className="mt-6 space-y-3">
-                  <div className="h-3 w-full rounded-full bg-white/20">
-                    <div className={`h-full rounded-full ${zone.barClass}`} style={{ width: `${meterProgress}%` }} />
-                  </div>
-                  <div className="flex justify-between text-xs uppercase tracking-widest text-white/60">
-                    <span>Risky</span>
-                    <span>Tight</span>
-                    <span>Healthy</span>
-                  </div>
+                <div className={styles.meterTrack} aria-hidden="true">
+                  <div
+                    className={`${styles.meterFill} ${getMeterClass(zone.key)}`}
+                    style={{ width: `${meterProgress}%` }}
+                  />
                 </div>
-                <div className="mt-8 space-y-3 rounded-2xl bg-white/10 p-5 backdrop-blur">
-                  <ResultRow label="Cash after purchase" value={formatCurrency(stats.projectedCash)} />
-                  <ResultRow label="Monthly net" value={formatCurrency(stats.monthlyNet)} />
-                  <ResultRow label="Months of cushion" value={`${formatCushionMonths(stats.cushionMonths)} mo`} />
-                </div>
-              </div>
-
-              <div className="rounded-3xl bg-white p-8 shadow-xl shadow-emerald-100/50">
-                <h3 className="text-xl font-semibold text-slate-900">How to use your result</h3>
-                <ul className="mt-4 space-y-4 text-sm text-slate-600">
-                  <li className="flex gap-3">
-                    <span className="mt-1 text-lg">📝</span>
-                    <span>
-                      Healthy? Celebrate and move ahead. Schedule your payment and set aside money for future goals while you&apos;re in the flow.
-                    </span>
+                <ul className={styles.resultList}>
+                  <li className={styles.resultItem}>
+                    <span>Cash after purchase</span>
+                    <strong>{formatCurrency(stats.projectedCash)}</strong>
                   </li>
-                  <li className="flex gap-3">
-                    <span className="mt-1 text-lg">⏱️</span>
-                    <span>
-                      Tight? Stretch your timeline or trim one expense this month. Even a small adjustment can move you into the green.
-                    </span>
+                  <li className={styles.resultItem}>
+                    <span>Monthly net</span>
+                    <strong>{formatCurrency(stats.monthlyNet)}</strong>
                   </li>
-                  <li className="flex gap-3">
-                    <span className="mt-1 text-lg">🛟</span>
-                    <span>
-                      Risky? Protect your peace. Focus on boosting cash or reducing expenses before committing to the purchase.
-                    </span>
+                  <li className={styles.resultItem}>
+                    <span>Months of cushion</span>
+                    <strong>{formatCushionMonths(stats.cushionMonths)} months</strong>
                   </li>
                 </ul>
-              </div>
+              </article>
+
+              {submittedResult ? (
+                <ResultCard
+                  firstName={submittedResult.firstName}
+                  email={submittedResult.email}
+                  inputs={submittedResult.inputs}
+                  stats={submittedResult.stats}
+                  zone={submittedResult.zone}
+                  tip={submittedResult.tip}
+                />
+              ) : null}
             </aside>
           ) : null}
         </div>
       </section>
 
+      <div role="status" aria-live="polite" className="visuallyHidden">
+        {screenReaderStatus}
+      </div>
+
       {isModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6" role="presentation">
+        <div className={styles.modalBackdrop} role="presentation" onClick={handleBackdropClick}>
           <div
-            className="absolute inset-0 bg-slate-900/60"
-            aria-hidden="true"
-            onClick={subscribeState !== "loading" ? closeModal : undefined}
-          />
-          <div
+            ref={modalRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="capture-title"
-            className="relative z-10 w-full max-w-lg rounded-3xl bg-white p-8 shadow-2xl"
+            className={styles.modal}
           >
-            <div className="flex items-start justify-between gap-4">
+            <header className={styles.modalHeader}>
               <div>
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-emerald-600">Step 2</p>
-                <h2 id="capture-title" className="mt-2 text-2xl font-semibold text-slate-900">
-                  Email me my result & checklist
+                <p className={styles.stepLabel}>Step 2</p>
+                <h2 id="capture-title" className={styles.cardTitle}>
+                  Email my result & checklist
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={closeModal}
                 disabled={subscribeState === "loading"}
-                className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:cursor-not-allowed"
+                className={styles.closeButton}
                 aria-label="Close email capture"
               >
-                <span aria-hidden="true">✕</span>
+                ×
               </button>
-            </div>
-            <p className="mt-2 text-sm text-slate-600">
-              Get your Money Health summary plus Anna&apos;s Money Clarity Checklist delivered to your inbox.
+            </header>
+            <p className={styles.helperText}>
+              We’ll send a Money Health summary plus Anna’s Money Clarity Checklist straight to your inbox.
             </p>
-            <form className="mt-6 space-y-4" onSubmit={handleSubscribe}>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+            <form className={styles.modalActions} onSubmit={handleSubscribe}>
+              <label className={styles.textField}>
                 First name
                 <input
                   ref={firstFieldRef}
@@ -609,10 +676,12 @@ export default function PlannerApp() {
                   }}
                   placeholder="Taylor"
                   required
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-normal text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  className={`${styles.inputControl} ${
+                    subscribeState === "error" && !firstName.trim() ? styles.errorControl : ""
+                  }`}
                 />
               </label>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+              <label className={styles.textField}>
                 Email address
                 <input
                   type="email"
@@ -624,34 +693,29 @@ export default function PlannerApp() {
                       setErrorMessage(null);
                     }
                   }}
-                  required
                   placeholder="you@example.com"
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-normal text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  required
+                  className={`${styles.inputControl} ${
+                    subscribeState === "error" && !email.trim() ? styles.errorControl : ""
+                  }`}
                 />
               </label>
-              <p className="text-xs text-slate-400">
-                By sharing your email you&apos;ll join the Money Made Simple list. Unsubscribe anytime.
+              <p className={styles.disclaimer}>
+                By sharing your email you’ll join Anna Murphy’s list. Unsubscribe anytime.
               </p>
-              <button
-                type="submit"
-                disabled={subscribeState === "loading"}
-                className="inline-flex w-full items-center justify-center rounded-full bg-slate-900 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-slate-300 transition hover:bg-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-900 disabled:cursor-not-allowed disabled:bg-slate-400"
-              >
-                {subscribeState === "loading" ? "Sending..." : "Send my result"}
+              <button type="submit" disabled={subscribeState === "loading"} className={styles.primaryButton}>
+                {subscribeState === "loading" ? "Sending…" : "Send my result"}
               </button>
               {subscribeState === "error" && errorMessage ? (
-                <p className="text-sm font-medium text-rose-500">{errorMessage}</p>
+                <p className={styles.errorText}>{errorMessage}</p>
               ) : null}
             </form>
-            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-sm text-emerald-700">
-              <p className="font-semibold">Ready for more clarity?</p>
-              <p className="mt-1">Book a free Clarity Call to map your next money move with Anna.</p>
-              <a
-                href={CTA_LINK}
-                className="mt-3 inline-flex items-center justify-center rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-600"
-                target="_blank"
-                rel="noreferrer"
-              >
+            <div className={styles.tipCard}>
+              <div>
+                <h3>Ready for more clarity?</h3>
+                <p className={styles.helperText}>Book a free Clarity Call to map your next money move with Anna.</p>
+              </div>
+              <a href={CTA_LINK} className={styles.primaryButton} target="_blank" rel="noreferrer">
                 Book a free Clarity Call
               </a>
             </div>
@@ -659,14 +723,5 @@ export default function PlannerApp() {
         </div>
       ) : null}
     </main>
-  );
-}
-
-function ResultRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 text-sm text-white/80">
-      <span className="font-medium text-white">{label}</span>
-      <span className="text-base font-semibold text-white">{value}</span>
-    </div>
   );
 }
