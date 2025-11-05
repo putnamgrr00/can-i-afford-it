@@ -91,7 +91,6 @@ export default function PlannerApp() {
 
   const modalRef = useRef<HTMLDivElement | null>(null);
   const firstFieldRef = useRef<HTMLInputElement | null>(null);
-  const resultInitialFocusRef = useRef<HTMLButtonElement | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
 
@@ -246,14 +245,18 @@ export default function PlannerApp() {
       return;
     }
 
-    const target =
-      modalStep === "capture"
-        ? firstFieldRef.current
-        : resultInitialFocusRef.current;
-
-    window.requestAnimationFrame(() => {
-      target?.focus();
-    });
+    if (modalStep === "capture") {
+      window.requestAnimationFrame(() => {
+        firstFieldRef.current?.focus();
+      });
+    } else {
+      window.requestAnimationFrame(() => {
+        const focusTarget = modalRef.current?.querySelector<HTMLElement>(
+          "[data-step-focus='true']",
+        );
+        focusTarget?.focus();
+      });
+    }
   }, [isModalOpen, modalStep]);
 
   useEffect(() => {
@@ -369,15 +372,15 @@ export default function PlannerApp() {
             <header className={styles.modalHeader}>
               {modalStep === "result" ? (
                 <button
-                  ref={resultInitialFocusRef}
                   type="button"
                   onClick={handleBackToCapture}
                   className={styles.backButton}
+                  data-step-focus={modalStep === "capture" ? undefined : "true"}
                 >
                   ← Back
                 </button>
               ) : (
-                <span className={styles.stepIndicator}>
+                <span className={styles.stepIndicator} data-step-focus="true">
                   Step 1 of 2
                 </span>
               )}
