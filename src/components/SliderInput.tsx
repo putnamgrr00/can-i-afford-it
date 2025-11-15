@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ChangeEventHandler, type MouseEventHandler } from "react";
+import { useCallback, useEffect, useState, type ChangeEventHandler, type MouseEventHandler, type TouchEventHandler } from "react";
 import { formatCurrency } from "@/lib/money";
 import styles from "./SliderInput.module.css";
 
@@ -65,6 +65,14 @@ export function SliderInput({
     setIsDragging(false);
   }, []);
 
+  const handleTouchStart = useCallback<TouchEventHandler<HTMLInputElement>>(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleTouchEnd = useCallback<TouchEventHandler<HTMLInputElement>>(() => {
+    setIsDragging(false);
+  }, []);
+
   const percentage = ((value - min) / (max - min)) * 100;
   const scaleY = 0.9 + (percentage / 100) * 0.3; // Scale from 0.9 to 1.2 based on value
   const emojiScale = 1 + (percentage / 100) * 0.4; // Scale from 1.0 → 1.4
@@ -84,10 +92,10 @@ export function SliderInput({
           step={step}
           value={value}
           onChange={handleSliderChange}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onTouchStart={handleMouseDown}
-          onTouchEnd={handleMouseUp}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           className={`${styles.slider} ${isDragging ? styles.sliderDragging : ""}`}
           style={{ "--thumb-scale-y": scaleY } as React.CSSProperties}
           aria-label={ariaLabel}
