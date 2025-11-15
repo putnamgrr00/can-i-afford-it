@@ -1,0 +1,209 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-dark);
+  line-height: 1.3;
+  margin-bottom: 8px;
+  min-height: 2.6em;
+}
+
+.description {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.sliderWrapper {
+  position: relative;
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.slider {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  outline: none;
+  z-index: 2;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Money Bar Thumb - Vertical Pill */
+.slider {
+  --thumb-scale-y: 0.9;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--green-primary);
+  border: 2px solid var(--white);
+  cursor: pointer;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transform: scaleY(var(--thumb-scale-y, 0.9));
+}
+
+.slider.sliderDragging::-webkit-slider-thumb {
+  transform: scaleY(1.2);
+  box-shadow: 0 2px 6px rgba(10, 138, 91, 0.4);
+}
+
+.slider::-moz-range-thumb {
+  width: 12px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background: var(--green-primary);
+  border: 2px solid var(--white);
+  cursor: pointer;
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transform: scaleY(var(--thumb-scale-y, 0.9));
+}
+
+.slider.sliderDragging::-moz-range-thumb {
+  transform: scaleY(1.2);
+  box-shadow: 0 2px 6px rgba(10, 138, 91, 0.4);
+}
+
+.slider:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--green-primary);
+  outline-offset: 2px;
+}
+
+.slider:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--green-primary);
+  outline-offset: 2px;
+}
+
+.sliderTrack {
+  position: absolute;
+  width: 100%;
+  height: 6px;
+  background: var(--gray-track);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.sliderFill {
+  height: 100%;
+  width: var(--fill-percentage);
+  background: var(--green-primary);
+  border-radius: var(--radius-full);
+  transition: width 200ms ease-out;
+}
+
+.outputRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+  min-height: 44px;
+  position: relative;
+}
+
+.moneyEmoji {
+  display: inline-block;
+  font-size: 32px;
+  line-height: 1;
+  transform: scale(var(--emoji-scale, 1));
+  transition: transform 0.25s ease, filter 0.25s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  flex-shrink: 0;
+}
+
+.numberInput {
+  width: 110px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-xs);
+  background: var(--white);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-dark);
+  text-align: center;
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+
+.numberInput:focus-visible {
+  outline: none;
+  border-color: var(--green-primary);
+  box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--green-primary);
+}
+
+.currencyValue {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  min-width: 100px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.valuePopping {
+  animation: valuePop 200ms ease-out;
+}
+
+@keyframes valuePop {
+  0% {
+    transform: scale(0.98);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.microcopy {
+  font-size: 13px;
+  color: var(--text-500);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .sliderContainer {
+    flex-direction: column;
+  }
+  
+  .valueDisplay {
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  .numberInput {
+    flex: 1;
+    max-width: 120px;
+  }
+  
+  .currencyValue {
+    font-size: 16px;
+    min-width: auto;
+  }
+}
+

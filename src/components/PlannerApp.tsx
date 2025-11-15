@@ -15,9 +15,13 @@ import {
   formatCurrency,
   formatCushionMonths,
   getMoneyHealthZone,
+  getZoneTip,
 } from "@/lib/money";
 import { type PlannerInputs } from "@/lib/planner";
+import confetti from "canvas-confetti";
 
+import { ResultCard } from "./ResultCard";
+import { SliderInput } from "./SliderInput";
 import styles from "./PlannerApp.module.css";
 
 type ModalStep = "capture" | "result";
@@ -42,8 +46,8 @@ const DEFAULT_VALUES: PlannerInputs = {
 const INPUTS: InputDefinition[] = [
   {
     id: "cashBalance",
-    label: "Cash in your account",
-    description: "How much is available in your bank account today?",
+    label: "How much do you have set aside?",
+    description: "Checking/savings – cash you already have",
     min: 0,
     max: 200000,
     step: 100,
@@ -51,8 +55,8 @@ const INPUTS: InputDefinition[] = [
   },
   {
     id: "monthlyIncome",
-    label: "Monthly income",
-    description: "Average take-home or owner pay each month.",
+    label: "About how much comes in each month?",
+    description: "Income – after tax, on average",
     min: 0,
     max: 200000,
     step: 100,
@@ -60,8 +64,8 @@ const INPUTS: InputDefinition[] = [
   },
   {
     id: "monthlyExpenses",
-    label: "Monthly expenses",
-    description: "Everything you spend to keep life and business running.",
+    label: "About how much goes out each month?",
+    description: "Bills, debt, essentials",
     min: 0,
     max: 200000,
     step: 100,
@@ -69,8 +73,8 @@ const INPUTS: InputDefinition[] = [
   },
   {
     id: "purchaseCost",
-    label: "Cost of what you want",
-    description: "Course, retreat, laptop—add it all in.",
+    label: "How much does this purchase cost?",
+    description: "Total price or amount you plan to spend",
     min: 0,
     max: 200000,
     step: 100,
@@ -88,6 +92,8 @@ export default function PlannerApp() {
   const [email, setEmail] = useState("");
   const [touched, setTouched] = useState({ name: false, email: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [emailSubmitted, setEmailSubmitted] = useState(false);
 
   const modalRef = useRef<HTMLDivElement | null>(null);
   const firstFieldRef = useRef<HTMLInputElement | null>(null);
@@ -97,10 +103,15 @@ export default function PlannerApp() {
   const stats = useMemo(() => {
     const projectedCash = values.cashBalance - values.purchaseCost;
     const monthlyNet = values.monthlyIncome - values.monthlyExpenses;
-    const cushionMonths =
+    let cushionMonths =
       values.monthlyExpenses > 0
         ? (values.cashBalance - values.purchaseCost) / values.monthlyExpenses
         : 0;
+
+    // Ensure cushionMonths is always a valid finite number
+    if (!Number.isFinite(cushionMonths) || Number.isNaN(cushionMonths)) {
+      cushionMonths = 0;
+    }
 
     return {
       projectedCash,
@@ -144,6 +155,8 @@ export default function PlannerApp() {
     setModalStep("capture");
     setTouched({ name: false, email: false });
     setIsSubmitting(false);
+    setEmailSubmitted(false);
+    setSubmitError(null);
     setIsModalOpen(true);
   }, []);
 
@@ -151,6 +164,8 @@ export default function PlannerApp() {
     setIsModalOpen(false);
     setIsSubmitting(false);
     setModalStep("capture");
+    setEmailSubmitted(false);
+    setSubmitError(null);
     if (timeoutRef.current) {
       window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -268,23 +283,65 @@ export default function PlannerApp() {
   }, []);
 
   const handleCaptureSubmit = useCallback<FormEventHandler<HTMLFormElement>>(
-    (event) => {
+    async (event) => {
       event.preventDefault();
       setTouched({ name: true, email: true });
+      setSubmitError(null);
 
       if (!captureIsValid) {
         return;
       }
 
       setIsSubmitting(true);
-      const delay = 500 + Math.floor(Math.random() * 300);
-      timeoutRef.current = window.setTimeout(() => {
-        setIsSubmitting(false);
+
+      try {
+        const response = await fetch("/api/subscribe", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: trimmedEmail,
+            firstName: trimmedName || undefined,
+            zone: zone.key,
+            cushionMonths: Number.isFinite(stats.cushionMonths) ? stats.cushionMonths : 0,
+            inputs: values,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Something went wrong. Please try again.");
+        }
+
+        setEmailSubmitted(true);
         setModalStep("result");
-        timeoutRef.current = null;
-      }, delay);
+        
+        // Trigger confetti after flip completes (~600ms delay)
+        if (zone.key === "healthy") {
+          setTimeout(() => {
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.6 },
+              colors: ["#0A8A5B", "#F6C25F"],
+              gravity: 0.8,
+              ticks: 100,
+            });
+          }, 600);
+        }
+      } catch (error) {
+        console.error("Subscribe error:", error);
+        setSubmitError(
+          error instanceof Error
+            ? error.message
+            : "We couldn't send your result. Please try again soon.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
     },
-    [captureIsValid],
+    [captureIsValid, trimmedEmail, trimmedName, zone.key, stats.cushionMonths, values],
   );
 
   const handleBackToCapture = useCallback(() => {
@@ -311,49 +368,46 @@ export default function PlannerApp() {
     <main className={styles.main}>
       <div className={styles.page}>
         <header className={styles.header}>
-          <h1 className={styles.title}>Can I afford it?</h1>
+          <span className={styles.brandTag}>Money Made Simple</span>
+          <h1 className={styles.title}>
+            Anna Murphy Presents: <span className={styles.titleAccent}>Can I Afford It?</span>
+          </h1>
           <p className={styles.subtitle}>
-            Drop in a few numbers to see how your cash cushion holds up before you
-            hit purchase.
+            A 60-second Money Health Check for your next purchase.
           </p>
         </header>
 
         <section className={styles.formCard}>
-          <h2 className={styles.sectionTitle}>Your numbers</h2>
+          <h2 className={styles.sectionTitle}>Your Money Snapshot</h2>
           <div className={styles.inputGrid}>
             {INPUTS.map((field) => (
-              <label key={field.id} className={styles.field}>
-                <span className={styles.fieldLabel}>{field.label}</span>
-                <span className={styles.fieldDescription}>{field.description}</span>
-                <div className={styles.numberInputWrap}>
-                  {field.prefix ? (
-                    <span className={styles.prefix}>{field.prefix}</span>
-                  ) : null}
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={field.min}
-                    max={field.max}
-                    step={field.step}
-                    value={values[field.id]}
-                    onChange={(event) =>
-                      handleInputChange(field.id, Number(event.target.value))
-                    }
-                    className={styles.numberInput}
-                  />
-                </div>
-              </label>
+              <SliderInput
+                key={field.id}
+                id={field.id}
+                label={field.label}
+                description={field.description}
+                value={values[field.id]}
+                min={field.min}
+                max={field.max}
+                step={field.step}
+                onChange={(value) => handleInputChange(field.id, value)}
+                ariaLabel={field.label}
+              />
             ))}
           </div>
+          <p className={styles.helperCopy}>Estimates are okay — just give your best guess.</p>
           <button
             type="button"
             onClick={openModal}
             className={styles.primaryButton}
             disabled={!inputsAreValid}
           >
-            Can I afford it?
+            Check my Money Health →
           </button>
         </section>
+        <footer className={styles.footer}>
+          Created by Anna Murphy • Money Made Simple
+        </footer>
       </div>
 
       {isModalOpen ? (
@@ -380,19 +434,27 @@ export default function PlannerApp() {
                   ← Back
                 </button>
               ) : (
-                <span className={styles.stepIndicator} data-step-focus="true">
-                  Step 1 of 2
-                </span>
+                <div></div>
               )}
               <div className={styles.modalHeadingGroup}>
                 <p className={styles.stepLabel}>
-                  {modalStep === "capture" ? "Step 1 of 2" : "Step 2 of 2"}
+                  {modalStep === "capture" ? "STEP 1 OF 2" : "STEP 2 OF 2"}
                 </p>
-                <h2 id="modal-title" className={styles.modalTitle}>
-                  {modalStep === "capture"
-                    ? "Subscribe to see your result"
-                    : "Here’s your affordability snapshot"}
-                </h2>
+                {modalStep === "result" && (
+                  <h2 id="modal-title" className={styles.modalTitle}>
+                    Your Money Health result
+                  </h2>
+                )}
+                {modalStep === "capture" && (
+                  <>
+                    <h2 id="modal-title" className={styles.modalTitle}>
+                      See your Money Health result
+                    </h2>
+                    <p className={styles.modalDescription}>
+                      Enter your details to view your result and get monthly money tips from Anna.
+                    </p>
+                  </>
+                )}
               </div>
               <button
                 type="button"
@@ -407,120 +469,81 @@ export default function PlannerApp() {
 
             {modalStep === "capture" ? (
               <form className={styles.captureForm} onSubmit={handleCaptureSubmit}>
-                <label className={styles.textField}>
-                  Name
-                  <input
-                    ref={firstFieldRef}
-                    type="text"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    onBlur={() =>
-                      setTouched((previous) => ({ ...previous, name: true }))
-                    }
-                    className={`${styles.inputControl} ${
-                      touched.name && nameError ? styles.inputError : ""
-                    }`}
-                    autoComplete="name"
-                  />
-                  {touched.name && nameError ? (
-                    <span role="alert" className={styles.errorText}>
-                      {nameError}
-                    </span>
-                  ) : null}
-                </label>
-                <label className={styles.textField}>
-                  Email
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    onBlur={() =>
-                      setTouched((previous) => ({ ...previous, email: true }))
-                    }
-                    className={`${styles.inputControl} ${
-                      touched.email && emailError ? styles.inputError : ""
-                    }`}
-                    autoComplete="email"
-                  />
-                  {touched.email && emailError ? (
-                    <span role="alert" className={styles.errorText}>
-                      {emailError}
-                    </span>
-                  ) : null}
-                </label>
+                <div className={styles.emailRow}>
+                  <div className={styles.emailInputWrapper}>
+                    <input
+                      ref={firstFieldRef}
+                      type="text"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      onBlur={() =>
+                        setTouched((previous) => ({ ...previous, name: true }))
+                      }
+                      placeholder="Your name"
+                      className={`${styles.emailInput} ${
+                        touched.name && nameError ? styles.inputError : ""
+                      }`}
+                      autoComplete="name"
+                      required
+                    />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      onBlur={() =>
+                        setTouched((previous) => ({ ...previous, email: true }))
+                      }
+                      placeholder="you@example.com"
+                      className={`${styles.emailInput} ${
+                        touched.email && emailError ? styles.inputError : ""
+                      }`}
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className={styles.emailButton}
+                    disabled={!captureIsValid || isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <span className={styles.loadingWrap}>
+                        <span className={styles.spinner} aria-hidden="true" />
+                      </span>
+                    ) : (
+                      "Show my Money Health"
+                    )}
+                  </button>
+                </div>
+                {touched.name && nameError ? (
+                  <span role="alert" className={styles.errorText}>
+                    {nameError}
+                  </span>
+                ) : null}
+                {touched.email && emailError ? (
+                  <span role="alert" className={styles.errorText}>
+                    {emailError}
+                  </span>
+                ) : null}
+                {submitError ? (
+                  <div role="alert" className={styles.errorText}>
+                    {submitError}
+                  </div>
+                ) : null}
                 <p className={styles.consentLine}>
-                  By submitting, you agree to receive emails from Anna Murphy.
-                  Unsubscribe anytime. <a href="#">Privacy Policy</a>
+                  You'll get monthly Money Made Simple tips. Unsubscribe anytime.
                 </p>
-                <button
-                  type="submit"
-                  className={styles.primaryButton}
-                  disabled={!captureIsValid || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <span className={styles.loadingWrap}>
-                      <span className={styles.spinner} aria-hidden="true" />
-                      Working…
-                    </span>
-                  ) : (
-                    "Subscribe & show result"
-                  )}
-                </button>
               </form>
             ) : (
               <div className={styles.resultStep}>
-                <div className={styles.resultCard}>
-                  <span
-                    className={`${styles.resultBadge} ${styles[`zone${zone.key}`]}`}
-                  >
-                    Money Health · {zone.label}
-                  </span>
-                  <p className={styles.resultSummary}>
-                    After your purchase you’d have {formatCurrency(stats.projectedCash)}
-                    {" "}
-                    on hand and about {formatCushionMonths(stats.cushionMonths)}
-                    {" "}
-                    months of cushion.
-                  </p>
-                  <ul className={styles.resultList}>
-                    <li>
-                      <span>Cash after purchase</span>
-                      <strong>{formatCurrency(stats.projectedCash)}</strong>
-                    </li>
-                    <li>
-                      <span>Monthly net</span>
-                      <strong>{formatCurrency(stats.monthlyNet)}</strong>
-                    </li>
-                    <li>
-                      <span>Months of cushion</span>
-                      <strong>
-                        {formatCushionMonths(stats.cushionMonths)} months
-                      </strong>
-                    </li>
-                  </ul>
-                  <p className={styles.resultDescription}>{zone.description}</p>
-                  <div className={styles.resultMeter} aria-hidden="true">
-                    <div className={styles.meterTrack}>
-                      <div
-                        className={`${styles.meterFill} ${styles[`zone${zone.key}`]}`}
-                        style={{ width: `${meterProgress}%` }}
-                      />
-                    </div>
-                    <div className={styles.meterLabels}>
-                      <span>Risky</span>
-                      <span>Tight</span>
-                      <span>Healthy</span>
-                    </div>
-                  </div>
-                  <div className={styles.resultActions}>
-                    <button type="button" className={styles.secondaryButton}>
-                      Download
-                    </button>
-                    <button type="button" className={styles.secondaryButton}>
-                      Share
-                    </button>
-                  </div>
-                </div>
+                <ResultCard
+                  firstName={trimmedName || undefined}
+                  email={emailSubmitted ? trimmedEmail : undefined}
+                  inputs={values}
+                  stats={stats}
+                  zone={zone}
+                  tip={getZoneTip(zone)}
+                />
               </div>
             )}
           </div>

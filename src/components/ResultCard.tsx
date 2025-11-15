@@ -152,32 +152,70 @@ export function ResultCard({ firstName, email, inputs, stats, zone, tip }: Resul
     }
   }, []);
 
+  const cardClass = `card${zone.key.charAt(0).toUpperCase() + zone.key.slice(1)}`;
+  const [isFlipped, setIsFlipped] = useState(false);
+
   return (
-    <div className={styles.card} ref={cardRef}>
-      <div className={styles.header}>
-        <div className={styles.zoneGroup}>
-          <span className={`${styles.zoneBadge} ${getBadgeClass(zone.key)}`}>
-            {ZONE_EMOJI[zone.key]} Money Health · {zone.label}
-          </span>
-          <div className={styles.zoneSummary}>
-            <h3>{firstName ? `${firstName}, here’s your snapshot` : "Your Money Health snapshot"}</h3>
-            {email ? <small>Sent to {email}</small> : null}
-            <p className={styles.zoneDescription}>{zone.description}</p>
+    <div className={styles.cardWrapper}>
+      <div 
+        className={`${styles.cardInner} ${isFlipped ? styles.isFlipped : ""}`}
+        onClick={() => setIsFlipped(true)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setIsFlipped(true);
+          }
+        }}
+        aria-label="Tap to reveal your Money Health result"
+      >
+        {/* Front face */}
+        <div className={styles.cardFace} style={{ background: "#fef6e8" }}>
+          <div className={styles.frontContent}>
+            <div className={styles.logoText}>Money Made Simple</div>
+            <div className={styles.revealText}>Your Money Health is ready.</div>
+            <div className={styles.tapText}>Tap to reveal your result.</div>
           </div>
+        </div>
+        {/* Back face - result content */}
+        <div className={`${styles.cardFace} ${styles.cardBack}`}>
+          <div className={`${styles.card} ${styles[cardClass]}`} ref={cardRef}>
+      <div className={styles.header}>
+        <div className={styles.headerStrip}>
+          Money Health – {zone.label}
+        </div>
+        <div className={styles.zoneSummary}>
+          <p className={styles.summarySentence}>
+            After your purchase you'd have {formatCurrency(stats.projectedCash)} on hand and about {formatCushionMonths(stats.cushionMonths)} months of cushion.
+          </p>
         </div>
       </div>
 
       <div className={styles.meter}>
-        <div className={styles.meterTrack} aria-hidden="true">
+        <div 
+          className={styles.meterTrack} 
+          aria-hidden="true"
+          style={{ 
+            "--fill-percentage": meterProgress / 100,
+            "--indicator-position": `${meterProgress}%`
+          } as React.CSSProperties}
+        >
           <div
-            className={`${styles.meterFill} ${getMeterClass(zone.key)}`}
-            style={{ width: `${meterProgress}%` }}
+            className={styles.meterFill}
+          />
+          <div
+            className={styles.meterIndicator}
+            style={{ 
+              borderColor: zone.key === "healthy" ? "#0a8a5b" : zone.key === "tight" ? "#f6c25f" : "#f97373"
+            } as React.CSSProperties}
+            aria-hidden="true"
           />
         </div>
         <div className={styles.meterLabels}>
-          <span>Risky</span>
-          <span>Tight</span>
-          <span>Healthy</span>
+          <span>RISKY</span>
+          <span>TIGHT</span>
+          <span>HEALTHY</span>
         </div>
       </div>
 
@@ -210,6 +248,9 @@ export function ResultCard({ firstName, email, inputs, stats, zone, tip }: Resul
         </button>
         {shareFeedback ? <p className={styles.feedback}>{shareFeedback}</p> : null}
         {downloadFeedback ? <p className={styles.feedback}>{downloadFeedback}</p> : null}
+      </div>
+          </div>
+        </div>
       </div>
     </div>
   );

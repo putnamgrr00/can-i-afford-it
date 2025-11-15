@@ -10,18 +10,25 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Can I Afford It? – Anna Murphy",
+  title: "Anna Murphy Presents: Can I Afford It? – Simple Money Health Check",
   description:
-    "A 60-second money planner from financial guide Anna Murphy that checks your cushion, color-codes your money health, and emails you a personalized plan.",
+    "A simple, friendly money planner from Anna Murphy that helps you quickly see if a new purchase is Healthy, Tight, or Risky for your budget. No spreadsheets, just clarity.",
   keywords: [
-    "money planner",
-    "budget tool",
-    "cash cushion calculator",
     "Anna Murphy",
-    "financial clarity",
+    "Can I Afford It",
+    "money health check",
+    "budget planner",
+    "bookkeeping for entrepreneurs",
+    "Girl Let's Talk Money",
   ],
   icons: {
     icon: "/favicon.svg",
+  },
+  openGraph: {
+    title: "Anna Murphy Presents: Can I Afford It?",
+    description:
+      "Check whether your next money move is Healthy, Tight, or Risky for your budget in 60 seconds.",
+    type: "website",
   },
 };
 

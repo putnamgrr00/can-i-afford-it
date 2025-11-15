@@ -21,17 +21,17 @@ Then open [http://localhost:3000](http://localhost:3000) to try the planner loca
 
 ## Environment variables
 
-Create a `.env.local` file with your ConvertKit credentials:
+Create a `.env.local` file with your Zapier webhook URL:
 
 ```bash
-CONVERTKIT_API_KEY=your_api_key
-CONVERTKIT_FORM_ID=your_form_id
-ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/... # Optional
-# Optional: point to a different base URL (defaults to the public API)
-# CONVERTKIT_BASE_URL=https://api.convertkit.com/v3
+ZAPIER_WEBHOOK_URL=https://hooks.zapier.com/...
 ```
 
-The email capture form calls the `/api/subscribe` route, which relays submissions directly to ConvertKit using the values above. Leave the fields unset to work offline without triggering real API calls. When `ZAPIER_WEBHOOK_URL` is present, the route will also forward the subscription summary to Zapier after a successful ConvertKit request.
+The email capture form calls the `/api/subscribe` route, which sends submissions to the Zapier webhook. The Zapier webhook should be configured to:
+1. Log data to Google Sheets
+2. Trigger a second Zap that adds the subscriber to ConvertKit
+
+Leave `ZAPIER_WEBHOOK_URL` unset to work offline without triggering real API calls (the form will still validate but won't submit).
 
 ## Available scripts
 

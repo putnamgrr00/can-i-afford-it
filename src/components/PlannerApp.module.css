@@ -1,17 +1,65 @@
 .main {
   min-height: 100vh;
-  padding: var(--space-24) var(--space-16) var(--space-32);
-  background: linear-gradient(180deg, rgba(24, 24, 27, 0.04), transparent 40%);
+  padding: var(--space-60) var(--space-16) var(--space-40);
+  background: var(--cream-bg);
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  animation: fadeIn 300ms ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .page {
   width: 100%;
-  max-width: 960px;
+  max-width: var(--container-max);
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space-32) var(--space-24);
   display: flex;
   flex-direction: column;
   gap: var(--space-24);
+  animation: cardFadeIn 300ms ease-out;
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: var(--space-20) var(--space-16);
+  }
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: var(--space-40) var(--space-16) var(--space-32);
+  }
+  
+  .page {
+    padding: var(--space-20) var(--space-16);
+  }
+  
+  .title {
+    font-size: clamp(1.3rem, 4vw, 1.8rem);
+    white-space: normal;
+  }
 }
 
 .header {
@@ -19,28 +67,57 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-12);
+  align-items: center;
+  margin-bottom: var(--space-24);
+}
+
+.brandTag {
+  display: inline-flex;
+  align-items: center;
+  background: var(--gold-accent);
+  color: var(--green-primary);
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .title {
-  font-size: clamp(2rem, 4vw, 2.75rem);
-  line-height: 1.1;
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+
+.titleAccent {
+  color: var(--green-primary);
 }
 
 .subtitle {
   color: var(--text-600);
   max-width: 60ch;
-  margin: 0 auto;
+  margin: var(--space-8) auto var(--space-24);
+  font-size: 16px;
+  line-height: var(--line-height-normal);
 }
 
 .formCard {
-  background: var(--surface-0);
-  border-radius: var(--radius);
-  border: 1px solid var(--border-200);
-  box-shadow: var(--shadow);
-  padding: var(--space-24);
+  background: transparent;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-20);
+}
+
+.footer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-500);
+  padding-top: var(--space-16);
+  margin-top: var(--space-8);
 }
 
 .sectionTitle {
@@ -50,13 +127,22 @@
 
 .inputGrid {
   display: grid;
-  gap: var(--space-16);
+  gap: 2.25rem;
+  grid-template-columns: 1fr;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 768px) {
   .inputGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
   }
+}
+
+.helperCopy {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: var(--space-24) 0 0 0;
 }
 
 .field {
@@ -105,29 +191,36 @@
   outline: none;
 }
 
+
 .primaryButton {
   appearance: none;
-  background: var(--green-600);
-  color: var(--surface-0);
+  background: var(--green-primary);
+  color: var(--white);
   border: none;
-  border-radius: var(--radius-sm);
-  padding: 14px var(--space-16);
+  border-radius: var(--radius-full);
+  padding: 12px 24px;
+  min-height: 44px;
   font-weight: 600;
   display: inline-flex;
   justify-content: center;
   align-items: center;
   gap: var(--space-8);
-  box-shadow: var(--shadow);
-  transition: filter 150ms ease, box-shadow 150ms ease;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out;
+  cursor: pointer;
 }
 
-.primaryButton:hover {
-  filter: brightness(0.94);
+.primaryButton:hover:not(:disabled) {
+  background: #0C9C67;
+}
+
+.primaryButton:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .primaryButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--green-600);
+  box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--green-primary);
 }
 
 .primaryButton:disabled {
@@ -139,32 +232,61 @@
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(17, 24, 39, 0.42);
+  background: rgba(0, 0, 0, 0.4);
   display: grid;
   place-items: center;
   padding: var(--space-16);
   z-index: 50;
+  animation: backdropFadeIn 200ms ease-out;
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
-  background: var(--surface-0);
+  background: var(--white);
   border-radius: var(--radius);
-  width: min(560px, 100%);
-  max-height: 90vh;
-  overflow: hidden;
+  width: min(600px, 100%);
+  max-height: min(98vh, 900px);
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border-200);
-  box-shadow: var(--shadow-lg, 0 28px 60px -24px rgba(15, 23, 42, 0.35));
+  box-shadow: var(--shadow);
+  animation: modalSlideUp 200ms ease-out;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modalHeader {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-12);
-  padding: var(--space-20) var(--space-24) var(--space-12);
+  padding: var(--space-32);
   border-bottom: 1px solid var(--border-200);
+}
+
+.modalHeadingGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  text-align: center;
 }
 
 .backButton,
@@ -181,8 +303,8 @@
 .backButton:focus-visible,
 .closeButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--green-600);
-  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--green-primary);
+  border-radius: var(--radius-xs);
 }
 
 .backButton[disabled],
@@ -214,13 +336,104 @@
 .modalTitle {
   font-size: 22px;
   line-height: 1.3;
+  font-weight: 600;
+}
+
+.modalDescription {
+  font-size: 15px;
+  line-height: var(--line-height-normal);
+  color: var(--text-muted);
+  margin: 0;
+  margin-top: var(--space-8);
 }
 
 .captureForm {
   display: flex;
   flex-direction: column;
-  gap: var(--space-16);
-  padding: var(--space-20) var(--space-24) var(--space-24);
+  gap: var(--space-12);
+  padding: var(--space-24) var(--space-32) var(--space-32);
+}
+
+@media (max-width: 768px) {
+  .modalHeader {
+    padding: var(--space-24) var(--space-20) var(--space-16);
+  }
+  
+  .captureForm {
+    padding: var(--space-20) var(--space-24) var(--space-24);
+  }
+}
+
+.emailRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  align-items: stretch;
+}
+
+.emailInputWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  width: 100%;
+}
+
+.emailInput {
+  width: 100%;
+  padding: 12px 20px;
+  border: 1px solid var(--border-200);
+  border-radius: var(--radius-full);
+  background: var(--white);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-dark);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.emailInput::placeholder {
+  color: var(--text-500);
+}
+
+.emailInput:focus-visible {
+  outline: none;
+  border-color: var(--green-primary);
+  box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--green-primary), 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.emailButton {
+  appearance: none;
+  background: var(--green-primary);
+  color: var(--white);
+  border: none;
+  width: 100%;
+  border-radius: var(--radius-full);
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 200ms ease-out, color 200ms ease-out, box-shadow 200ms ease-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emailButton:hover:not(:disabled) {
+  background: var(--gold-accent);
+  color: var(--text-dark);
+}
+
+.emailButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--green-primary), 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.emailButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .textField {
@@ -240,7 +453,7 @@
 
 .inputControl:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--green-600);
+  box-shadow: 0 0 0 2px var(--surface-0), 0 0 0 4px var(--green-primary);
 }
 
 .inputError {
@@ -286,7 +499,7 @@
 
 .resultStep {
   padding: var(--space-20) var(--space-24) var(--space-24);
-  overflow-y: auto;
+  overflow: visible;
 }
 
 .resultCard {
@@ -404,6 +617,61 @@
 .secondaryButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.thankYouMessage {
+  margin-top: var(--space-16);
+  padding: var(--space-16);
+  background: var(--zone-healthy);
+  border-radius: var(--radius-xs);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-8);
+  animation: slideIn 250ms ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.thankYouMessage::before {
+  content: "✓";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--green-primary);
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.thankYouMessage p {
+  margin: 0;
+  color: var(--text-dark);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .emailRow {
+    flex-direction: column;
+  }
+  
+  .emailButton {
+    width: 100%;
+  }
 }
 
 @media (max-width: 480px) {

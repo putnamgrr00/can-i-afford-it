@@ -10,19 +10,22 @@ const ZONES: Array<MoneyHealthZone & { threshold: number }> = [
   {
     key: "healthy",
     label: "Healthy",
-    description: "You can comfortably afford this purchase and will keep a strong buffer.",
+    description:
+      "You're in the Healthy zone ✅ This purchase fits your money situation. You'll still have a solid cushion after you pay for it. Keep doing what you're doing — and remember, that buffer is what keeps surprise expenses from becoming emergencies.",
     threshold: 2,
   },
   {
     key: "tight",
     label: "Tight",
-    description: "You're close — make a plan before you swipe.",
+    description:
+      "You're in the Tight zone ⚠️ You can make this purchase, but it will shrink your cushion. If you go ahead, make sure you keep an eye on extra spending for the next month or two. A few small adjustments — or waiting a bit longer — could move you into the Healthy zone.",
     threshold: 1,
   },
   {
     key: "risky",
     label: "Risky",
-    description: "Press pause — let's build your cushion first.",
+    description:
+      "You're in the Risky zone ❌ This purchase could leave you short on cash for your basic bills and responsibilities. That doesn't mean 'never' — it just means 'not yet.' Building your cushion first will make this decision feel a lot safer.",
     threshold: 0,
   },
 ];
@@ -72,4 +75,28 @@ export function formatCushionMonths(value: number): string {
   }
 
   return value.toFixed(1);
+}
+
+const ZONE_TIPS: Record<MoneyHealthZoneKey, string[]> = {
+  healthy: [
+    "Keep building that buffer — even an extra $50/mo strengthens your safety net.",
+    "You're doing great — consider setting aside a bit more to grow into the next financial milestone.",
+    "Your cushion is solid. Consider what financial goal you want to tackle next.",
+  ],
+  tight: [
+    "If you can delay the purchase 2–4 weeks, your cushion will improve.",
+    "Try trimming one non-essential expense this month to strengthen your buffer.",
+    "A few small adjustments over the next 30 days could move you into the Healthy zone.",
+  ],
+  risky: [
+    "Focus on building 1–2 more months of cushion before committing.",
+    "Even a small weekly savings habit can move you toward the Healthy zone.",
+    "That doesn't mean 'never' — it just means 'not yet.' Building your cushion first will make this decision feel a lot safer.",
+  ],
+};
+
+export function getZoneTip(zone: MoneyHealthZone): string {
+  const tips = ZONE_TIPS[zone.key];
+  const randomIndex = Math.floor(Math.random() * tips.length);
+  return tips[randomIndex] || tips[0];
 }

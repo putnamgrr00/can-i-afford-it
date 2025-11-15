@@ -15,16 +15,25 @@ type SubscribeRequest = {
 
 type ZapierPayload = {
   email: string;
-  firstName?: string;
-  zone: string;
-  cushionMonths: string;
-  inputs: PlannerInputs;
+  first_name?: string;
+  cash_balance: number;
+  monthly_income: number;
+  monthly_expenses: number;
+  purchase_cost: number;
+  months_cushion: string;
+  money_health_zone: string;
 };
 
 const ZAPIER_WEBHOOK_URL = sanitizeString(process.env.ZAPIER_WEBHOOK_URL);
 
-function isNonNegativeFiniteNumber(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+// Debug: Log environment variable status (remove in production)
+if (process.env.NODE_ENV !== "production") {
+  console.log("ZAPIER_WEBHOOK_URL from env:", process.env.ZAPIER_WEBHOOK_URL);
+  console.log("ZAPIER_WEBHOOK_URL sanitized:", ZAPIER_WEBHOOK_URL);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 async function sendZapierWebhook(url: string, payload: ZapierPayload) {
@@ -72,8 +81,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Money health zone is required." }, { status: 400 });
   }
 
-  if (!isNonNegativeFiniteNumber(payload.cushionMonths)) {
-    return NextResponse.json({ error: "Cushion months must be a valid number." }, { status: 400 });
+  // Validate cushionMonths - ensure it's a valid finite number (negative values are allowed)
+  if (
+    typeof payload.cushionMonths !== "number" ||
+    !Number.isFinite(payload.cushionMonths) ||
+    Number.isNaN(payload.cushionMonths)
+  ) {
+    console.error("Invalid cushionMonths:", payload.cushionMonths, typeof payload.cushionMonths);
+    return NextResponse.json(
+      { error: "Cushion months must be a valid number." },
+      { status: 400 },
+    );
   }
 
   if (!isValidPlannerInputs(payload.inputs)) {
@@ -91,17 +109,20 @@ export async function POST(request: Request) {
   try {
     await sendZapierWebhook(ZAPIER_WEBHOOK_URL, {
       email,
-      firstName,
-      zone: summary.zone,
-      cushionMonths: summary.cushionMonths.toFixed(1),
-      inputs: summary.inputs,
+      first_name: firstName,
+      cash_balance: normalizedInputs.cashBalance,
+      monthly_income: normalizedInputs.monthlyIncome,
+      monthly_expenses: normalizedInputs.monthlyExpenses,
+      purchase_cost: normalizedInputs.purchaseCost,
+      months_cushion: summary.cushionMonths.toFixed(1),
+      money_health_zone: summary.zone,
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("subscribe.zapier", error);
     return NextResponse.json(
-      { error: "We couldn’t reach the email service. Please try again soon." },
+      { error: "We couldn't reach the email service. Please try again soon." },
       { status: 502 },
     );
   }
