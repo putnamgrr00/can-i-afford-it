@@ -187,7 +187,7 @@ export function ResultCard({ firstName, email, inputs, stats, zone, tip }: Resul
         </div>
         <div className={styles.zoneSummary}>
           <p className={styles.summarySentence}>
-            After your purchase you'd have {formatCurrency(stats.projectedCash)} on hand and about {formatCushionMonths(stats.cushionMonths)} months of cushion.
+            After your purchase you&apos;d have {formatCurrency(stats.projectedCash)} on hand and about {formatCushionMonths(stats.cushionMonths)} months of cushion.
           </p>
         </div>
       </div>
