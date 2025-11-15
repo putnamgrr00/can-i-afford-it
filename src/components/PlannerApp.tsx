@@ -429,7 +429,7 @@ export default function PlannerApp() {
                   type="button"
                   onClick={handleBackToCapture}
                   className={styles.backButton}
-                  data-step-focus={modalStep === "capture" ? undefined : "true"}
+                  data-step-focus="true"
                 >
                   ← Back
                 </button>
