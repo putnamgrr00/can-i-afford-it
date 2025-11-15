@@ -531,7 +531,7 @@ export default function PlannerApp() {
                   </div>
                 ) : null}
                 <p className={styles.consentLine}>
-                  You&apos;ll get monthly Money Made Simple tips. Unsubscribe anytime.
+                  You&apos;ll get monthly newsletter tips about money. Unsubscribe anytime.
                 </p>
               </form>
             ) : (
